@@ -34,7 +34,8 @@ app.use(cors({
       "http://localhost:5173",
       "http://localhost:8080",
       "http://localhost:3000",
-      "https://crop-recommendation-model-fastapi.onrender.com"
+      "https://crop-recommendation-model-fastapi.onrender.com",
+      "https://annadata-client.vercel.app"
     ];
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
@@ -58,7 +59,9 @@ const io = socketIo(server, {
         process.env.CLIENT_URL || "http://localhost:8081",
         "http://localhost:5173",
         "http://localhost:8080",
-        "http://localhost:3000"
+        "http://localhost:3000",
+        "https://crop-recommendation-model-fastapi.onrender.com",
+        "https://annadata-client.vercel.app"
       ];
       // Allow requests with no origin
       if (!origin) return callback(null, true);
@@ -380,16 +383,31 @@ app.use('/api/export', exportRoutes);
 app.use('/api/soil', soilRoutes);
 app.use('/api/ai', aiRoutes);
 
+// Basic health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
-// Start server
+// Start the server
 const PORT = process.env.PORT || 5000;
+
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    console.log(`Port ${PORT} is already in use, trying port ${PORT + 1}...`);
+    server.listen(PORT + 1);
+  } else {
+    console.error('Server error:', e);
+  }
+});
+
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${server.address().port}`);
   
   // Connect to MongoDB
   mongoose.connect(process.env.MONGODB_URI)
