@@ -1,0 +1,281 @@
+Backend Architecture & Feature Map for Unified Platform
+Technology Stack
+Backend Framework: Node.js + Express.js
+Database: MongoDB (Mongoose ORM)
+Real-Time Communication: Socket.io
+Geolocation: Google Maps API/Mapbox
+Authentication: JWT + Bcrypt
+Payment Gateway: Razorpay
+Image Storage: Cloudinary
+Email: Nodemailer
+
+
+1. Authentication & Authorization
+JWT-Based Role Authentication: Separate login/register flows for Farmers, Vendors, Consumers, and Admins.
+Password Reset & Email Verification: Nodemailer for OTP-based flows.
+
+2. Marketplace Features
+Multi-Layered Marketplace:
+Farmers → Vendors: Farmers list produce; vendors bulk-purchase.
+Vendors → Consumers: Vendors (including thela walas) sell to consumers.
+
+
+3. Product Management:
+Farmers/Vendors add products with categories, pricing, and stock. (Farmer can add product and vendor can add product)
+When vendor add product then admin will have power to add some percentage their margin. This will show in admin dashboard to set margin. create api for set margin and get margin.
+
+4. Advanced Search:
+Filters (price, category, ratings), geolocation-based sorting for thela walas.
+
+5. Thela Wala (Cart Vendor) System
+Live Location Tracking: 
+Thela walas update location via GPS (web). will show map on consumer side where is thier nearest thela wala.
+Consumers see real-time positions via Mapbox/Google Maps.   
+
+6. Product Availability Check:
+Thela walas update stock in real-time.
+
+7. Order Flow:
+Consumer places order with nearby thela wala.
+Thela wala accepts/rejects via push notification.
+Real-time order status updates (Socket.io).
+
+4. Order Management
+Unified Order System:
+Consumers track orders (placed, accepted, in-transit, delivered).
+Vendors/Farmers manage bulk orders (e.g., vendors purchasing from farmers).
+
+4. Payment Integration:
+Escrow system for transactions (hold payments until delivery confirmation).
+Refund/Return policies.
+
+5. Dashboards & Analytics
+Admin Dashboard:
+User management (CRUD for all roles).
+Sales reports, revenue trends, user demographics.
+Export data as CSV/PDF.
+
+
+Farmer/Vendor Dashboards:
+Sales performance, popular products, customer insights.
+Inventory alerts (low stock).
+
+Consumer Dashboard:
+Order history, invoice downloads, saved addresses.
+
+6. Additional Features
+Push Notifications: When any cart vendor is near by 500 m then all nearby consumer will get push notification.
+
+Reviews & Ratings: For farmers, vendors, and thela walas.
+Push Notifications: Order updates, promotions.
+Referral & Loyalty Programs: Discounts for referrals/repeat customers.
+Support System: Ticketing for issue resolution.
+Bidding System (Optional): Vendors bid on farmers’ produce.
+Admin can add some percentage of margin for vendor.
+
+
+
+
+API Endpoints:
+
+1. Common APIs
+Authentication & Authorization
+All roles use these endpoints for signup, login, email verification, and password resets.
+
+POST /api/auth/register/farmer – Register a new farmer account
+
+POST /api/auth/register/vendor – Register a new vendor account
+
+POST /api/auth/register/consumer – Register a new consumer account
+
+POST /api/auth/register/admin – Register an admin account (if needed)
+
+POST /api/auth/login/farmer – Farmer login
+
+POST /api/auth/login/vendor – Vendor login
+
+POST /api/auth/login/consumer – Consumer login
+
+POST /api/auth/login/admin – Admin login
+
+POST /api/auth/verify-email – Verify email via OTP/code
+
+POST /api/auth/resend-verification-email – Resend verification OTP/code
+
+POST /api/auth/forgot-password – Request password reset
+
+POST /api/auth/reset-password – Reset password using OTP/code
+
+Public Product Listings
+(No authentication required for the homepage.)
+
+GET /api/products – List all grocery/produce products
+GET /api/products/:id – Get product details
+Category‑Wise Listings
+GET /api/products/categories – Retrieve a list of all product categories (e.g., crops, vegetables, fruits, etc.)
+GET /api/products/category/:categoryName – Retrieve all products within a specific category
+GET /api/products/search?query=&category=&minPrice=&maxPrice=&ratings=&lat=&lng= – Advanced search with optional category filtering
+2. Farmer APIs
+Farmer Product Management
+For farmers to list and manage their produce (targeting bulk orders from vendors).
+
+GET /api/farmer/products – List all products added by the farmer
+GET /api/farmer/products/:id – Get details for a specific product
+POST /api/farmer/products – Create a new produce listing (include category field: e.g., crops, vegetables, fruits, etc.)
+PUT /api/farmer/products/:id – Update an existing product
+DELETE /api/farmer/products/:id – Delete a product
+Farmer Order Management
+Handling orders coming in from vendors.
+
+GET /api/farmer/orders – Retrieve incoming orders from vendors
+GET /api/farmer/orders/:orderId – Get details for a specific order
+Farmer Dashboard & Advanced Analytics
+Basic dashboards and advanced analytics reporting for sales, inventory, and trends.
+
+GET /api/farmer/dashboard/sales – View sales performance metrics
+GET /api/farmer/dashboard/inventory – Get alerts on low stock levels
+GET /api/farmer/analytics/advanced – Retrieve an advanced analytics report (e.g., sales trends, growth projections, seasonal patterns)
+3. Vendor APIs
+(Vendor now includes both traditional vendors and mobile cart vendors/thela walas.)
+
+Vendor Product Management
+For vendors to add and manage products sold to consumers. (Admin can later apply margin adjustments.)
+
+GET /api/vendor/products – List products added by the vendor
+GET /api/vendor/products/:id – Get product details
+POST /api/vendor/products – Add a new product (include category field)
+PUT /api/vendor/products/:id – Update an existing product
+DELETE /api/vendor/products/:id – Delete a product
+Vendor Order Management
+Managing consumer orders and real-time status updates.
+
+GET /api/vendor/orders – List all consumer orders placed with the vendor
+GET /api/vendor/orders/:orderId – Get details of a specific order
+PUT /api/vendor/orders/:orderId/accept – Accept an order
+PUT /api/vendor/orders/:orderId/reject – Reject an order
+PUT /api/vendor/orders/:orderId/status – Update order status (e.g., in-transit, delivered)
+Live Location & Proximity (Real-Time)
+(Integrated for vendors acting as mobile cart vendors/thela walas.)
+
+POST /api/vendor/location/update – Update vendor’s current GPS coordinates
+GET /api/vendor/location/nearby?lat={latitude}&lng={longitude}&radius=500 – Retrieve vendors within a 500‑meter radius for real‑time mapping
+Vendor Dashboard & Advanced Analytics
+Dashboards for sales, popular products, order volume, and other business insights.
+
+GET /api/vendor/dashboard/sales – Sales performance and order statistics
+GET /api/vendor/dashboard/orders – Insights on order fulfillment, cancellations, etc.
+GET /api/vendor/analytics/advanced – Retrieve an advanced analytics report (e.g., revenue trends, product popularity, customer behavior analytics)
+4. Consumer APIs
+Order & Account Management
+POST /api/orders – Place a new order (selecting a nearby vendor)
+GET /api/orders – List orders for the logged‑in consumer
+GET /api/orders/:orderId – View details of a specific order
+Consumer Dashboard
+GET /api/dashboard/orders – Order history and status tracking
+GET /api/dashboard/invoices – Retrieve/download invoices
+POST /api/dashboard/addresses – Add a new delivery address
+PUT /api/dashboard/addresses/:id – Update an address
+DELETE /api/dashboard/addresses/:id – Remove an address
+5. Payment Integration
+POST /api/payment/checkout – Initiate a payment transaction via Razorpay (with escrow functionality)
+POST /api/payment/webhook – Process Razorpay webhook events
+POST /api/payment/refund – Initiate a refund for cancellations or returns
+6. Admin APIs
+User & System Management
+GET /api/admin/users – List all users (with role filtering as needed)
+GET /api/admin/users/:id – Retrieve details for a specific user
+PUT /api/admin/users/:id – Update user details
+DELETE /api/admin/users/:id – Remove a user account
+Margin & Sales Management
+GET /api/admin/margins – Retrieve current margin settings for vendor products
+POST /api/admin/margins – Set or update the margin percentage for vendors
+GET /api/admin/orders – Monitor and manage all orders across the platform
+Advanced Analytics for Admin
+A comprehensive analytics module covering overall sales, revenue trends, user demographics, inventory performance, and category‑wise insights.
+
+GET /api/admin/analytics/overview – High‑level analytics dashboard (aggregated metrics and KPIs)
+GET /api/admin/analytics/sales – Detailed sales performance and trend analysis
+GET /api/admin/analytics/inventory – Inventory status and product movement analytics
+GET /api/admin/analytics/categories – Category‑wise performance analytics (e.g., crops, vegetables, fruits)
+GET /api/admin/analytics/users – User demographics and engagement reports
+GET /api/admin/analytics/export – Export analytics data as CSV/PDF
+7. Additional Features
+Reviews & Ratings
+POST /api/reviews – Submit a review or rating for a product, farmer, or vendor
+GET /api/reviews/:entityId – Retrieve reviews for a specific entity
+PUT /api/reviews/:reviewId – Update an existing review
+DELETE /api/reviews/:reviewId – Delete a review
+Referral & Loyalty Programs
+POST /api/referrals – Submit or redeem a referral code
+GET /api/referrals/:userId – Retrieve a user’s referral details
+POST /api/loyalty/redeem – Redeem loyalty points for discounts
+GET /api/loyalty/:userId – Get loyalty program balance and details
+Support / Ticketing System
+POST /api/support/ticket – Create a new support ticket
+GET /api/support/tickets – List all support tickets for the logged‑in user
+GET /api/support/tickets/:ticketId – Get details of a specific ticket
+PUT /api/support/tickets/:ticketId – Update a support ticket (e.g., add comments or status updates)
+DELETE /api/support/tickets/:ticketId – Close or delete a support ticket
+Bidding System (Optional)
+POST /api/bids – Place a bid on a farmer’s produce
+GET /api/bids?productId={id} – List bids for a specific product
+PUT /api/bids/:bidId – Update a bid (if permitted)
+DELETE /api/bids/:bidId – Withdraw a bid
+GET /api/bids/user/:userId – List bids placed by a user
+Notifications
+GET /api/notifications – Retrieve notifications for the logged‑in user
+PUT /api/notifications/:id/read – Mark a notification as read
+
+
+
+
+
+Real‑Time Communication (Socket.io Events)
+In addition to the standard real‑time events, we add a dedicated event for proximity alerts:
+
+Event: "locationUpdate"
+Emitted by the vendor’s client to broadcast updated GPS coordinates in real time via POST /api/vendor/location/update.
+
+Event: "orderStatusUpdate"
+Broadcast order status changes to relevant parties (consumers, vendors, and farmers).
+
+Event: "newOrder"
+Notify vendors of incoming orders.
+
+Event: "pushNotification"
+General notifications, including order updates and promotions.
+
+Event: "vendorNearbyAlert"
+New: When a vendor updates their location, the backend calculates the distance between the vendor and registered consumers (using their saved locations or real‑time geodata). If a consumer is within a 500‑meter radius, the system emits the vendorNearbyAlert event to that consumer’s client. The notification can include a message such as "A cart vendor is 500m near to you".
+
+Implementation Details
+Vendor Location Update
+
+Endpoint: POST /api/vendor/location/update
+Process:
+The vendor sends their current latitude and longitude.
+The backend updates the vendor’s location in the database.
+The backend then calculates the distance between this vendor and nearby consumers.
+If any consumer is found within the 500‑meter threshold, a vendorNearbyAlert event is emitted via Socket.io to those consumers.
+Consumer Client
+
+Consumers' applications should subscribe to the vendorNearbyAlert event.
+Upon receiving the event, the consumer receives a real‑time notification that a vendor is nearby.
+
+
+
+Important Rules:
+First create a workflow to build fully functional backend for this project with all the features. do not miss any single feature.
+Keep code structure clean and easy to understand. Also do not use so many extra things. Just keep minimal and useful things.
+Write everything in workflow and then start coding. After each implementation update the workflow to indicate the progress.
+After each feature implementation create a api documentation. Where you can see all the api and their response. give api payload and response example. so that easily able to create frontend.
+Do not use caching.
+Just use mongodb for db.
+Nodemailer for email.
+no need for logging.
+
+1. create workflow to build fully functional backend for this project with all the features. do not miss any single feature.
+2. keep code structure clean and easy to understand. Also do not use so many extra things. Just keep minimal and useful things.
+3. write full schema models in workflow
+3. write all apis workflow.
+4. after each feature implementation create a api documentation. Where you can see all the api and their response. give api payload and response example. so that easily able to create frontend.
