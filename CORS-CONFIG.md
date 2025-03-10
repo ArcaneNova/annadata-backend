@@ -6,12 +6,13 @@ This document explains the Cross-Origin Resource Sharing (CORS) configuration fo
 
 ## Server Configuration
 
-The application uses a dynamic CORS configuration that adapts based on the environment:
+The application uses an open CORS configuration that allows requests from all origins in both development and production environments:
 
-- In **development**, all origins are allowed to facilitate local testing and development.
-- In **production**, the application can be configured to either:
-  - Allow all origins (current default)
-  - Restrict to specific allowed origins (configurable via environment variables)
+- All origins are allowed (`Access-Control-Allow-Origin: *`)
+- All standard HTTP methods are supported
+- Common headers are allowed
+- Credentials are supported
+- Preflight requests are cached for 24 hours
 
 ## Implementation Details
 
@@ -21,31 +22,7 @@ The main CORS configuration is implemented in `server.js` using the `cors` middl
 
 ```javascript
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl requests, etc)
-    if (!origin) return callback(null, true);
-    
-    // In production, you can specify allowed origins if needed
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      process.env.CLIENT_URL,
-      process.env.PRODUCTION_CLIENT_URL
-    ].filter(Boolean); // Filter out undefined values
-    
-    // For security in production, check if origin is in allowed list
-    // In development or if no specific origins are defined, allow all
-    if (process.env.NODE_ENV === 'production' && allowedOrigins.length > 0) {
-      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-        callback(null, true);
-      } else {
-        callback(new Error('CORS not allowed'));
-      }
-    } else {
-      // In development or if no allowed origins are specified, allow all origins
-      callback(null, true);
-    }
-  },
+  origin: '*', // Allow all origins
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Origin", "Accept"],
   credentials: true,
@@ -61,7 +38,7 @@ app.options('*', cors(corsOptions));
 
 ### Vercel Deployment (vercel.json)
 
-For Vercel deployments, CORS headers are also configured in `vercel.json`:
+For Vercel deployments, CORS headers are configured in `vercel.json`:
 
 ```json
 {
@@ -71,6 +48,7 @@ For Vercel deployments, CORS headers are also configured in `vercel.json`:
       "dest": "src/server.js",
       "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       "headers": {
+        "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Credentials": "true",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
         "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept, Authorization, Origin",
@@ -81,22 +59,28 @@ For Vercel deployments, CORS headers are also configured in `vercel.json`:
 }
 ```
 
-Note: The `Access-Control-Allow-Origin` header is not set in `vercel.json` because it's dynamically handled by the Express server based on the request origin.
-
-## Environment Variables
-
-To configure allowed origins in production, set the following environment variables:
-
-- `CLIENT_URL`: The main client application URL
-- `PRODUCTION_CLIENT_URL`: Additional production client URL if needed
-- `NODE_ENV`: Set to 'production' to enable origin restrictions
-
 ## Socket.IO Configuration
 
-Socket.IO uses the same CORS configuration as the Express server to maintain consistency.
+Socket.IO uses the same open CORS configuration:
+
+```javascript
+const io = socketIo(server, {
+  cors: {
+    origin: '*',
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Origin", "Accept"],
+    credentials: true
+  }
+});
+```
 
 ## Security Considerations
 
-- In production with restricted origins, only specified domains and Vercel deployments (ending with `.vercel.app`) are allowed
-- Credentials are supported for authenticated requests
-- Preflight requests are cached for 24 hours to improve performance 
+- This configuration allows requests from any domain
+- While this is less secure than restricting origins, it provides maximum accessibility
+- API security should be enforced through other means:
+  - Strong authentication
+  - Input validation
+  - Rate limiting
+  - Request validation
+  - Proper error handling 

@@ -35,13 +35,18 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
-// Configure CORS to allow all origins
+// Configure CORS to allow specific origins with credentials
 const corsOptions = {
-  origin: '*', // Allow all origins
+  origin: [
+    'https://annadata-client.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Origin", "Accept"],
   credentials: true,
-  maxAge: 86400 // 24 hours
+  maxAge: 86400, // 24 hours
+  optionsSuccessStatus: 200 // Return 200 for preflight requests
 };
 
 // Apply CORS middleware
@@ -52,12 +57,7 @@ app.options('*', cors(corsOptions));
 
 // Socket.IO setup with CORS configuration
 const io = socketIo(server, {
-  cors: {
-    origin: '*', // Allow all origins for Socket.IO
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Origin", "Accept"],
-    credentials: true
-  },
+  cors: corsOptions,
   path: '/socket.io',
   pingTimeout: 60000,
   pingInterval: 25000,
