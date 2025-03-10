@@ -26,27 +26,33 @@ const aiRoutes = require('./routes/ai.routes');
 const app = express();
 const server = http.createServer(app);
 
+// Parse JSON request bodies
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Add health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
+
+// Add middleware to handle preflight requests
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
+
 // Update CORS configuration
 app.use(cors({
-  origin: function(origin, callback) {
-    const allowedOrigins = [
-      process.env.CLIENT_URL || "http://localhost:8081",
-      "http://localhost:5173",
-      "http://localhost:8080",
-      "http://localhost:3000",
-      "https://crop-recommendation-model-fastapi.onrender.com",
-      "https://annadata-client.vercel.app"
-    ];
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      return callback(null, true);
-    } else {
-      console.log("Blocked by CORS: ", origin);
-      return callback(null, true); // Temporarily allow all origins for debugging
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  origin: true, // Allow all origins with credentials support
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
@@ -54,25 +60,8 @@ app.use(cors({
 // Socket.IO setup with CORS configuration
 const io = socketIo(server, {
   cors: {
-    origin: function(origin, callback) {
-      const allowedOrigins = [
-        process.env.CLIENT_URL || "http://localhost:8081",
-        "http://localhost:5173",
-        "http://localhost:8080",
-        "http://localhost:3000",
-        "https://crop-recommendation-model-fastapi.onrender.com",
-        "https://annadata-client.vercel.app"
-      ];
-      // Allow requests with no origin
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        return callback(null, true);
-      } else {
-        console.log("Socket.IO blocked by CORS: ", origin);
-        return callback(null, true); // Temporarily allow all origins for debugging
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: true, // Allow all origins with credentials support
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"]
   },
