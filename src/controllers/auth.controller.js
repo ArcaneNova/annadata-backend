@@ -89,9 +89,9 @@ const register = async (req, res) => {
 // Verify email
 const verifyEmail = async (req, res) => {
   try {
-    const { email, token } = req.body;
+    const { token } = req.params;
 
-    const user = await User.findOne({ email, verificationToken: token });
+    const user = await User.findOne({ verificationToken: token });
     if (!user) {
       return res.status(400).json({ message: 'Invalid verification token' });
     }
@@ -109,11 +109,6 @@ const verifyEmail = async (req, res) => {
 
 // Login user
 const login = async (req, res) => {
-  // Add CORS headers
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
   try {
     const { email, password, role } = req.body;
 
@@ -191,10 +186,9 @@ const forgotPassword = async (req, res) => {
 // Reset password
 const resetPassword = async (req, res) => {
   try {
-    const { email, token, newPassword } = req.body;
+    const { token, password } = req.body;
 
     const user = await User.findOne({
-      email,
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() }
     });
@@ -204,7 +198,7 @@ const resetPassword = async (req, res) => {
     }
 
     // Update password
-    user.password = newPassword;
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();

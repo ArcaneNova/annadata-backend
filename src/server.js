@@ -35,42 +35,48 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
+// Configure CORS properly for all environments
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests, etc)
+    if (!origin) return callback(null, true);
+    
+    // In production, you can specify allowed origins if needed
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://annadata-client.vercel.app',
+      process.env.CLIENT_URL,
+      process.env.PRODUCTION_CLIENT_URL
+    ].filter(Boolean); // Filter out undefined values
+    
+    // For security in production, check if origin is in allowed list
+    // In development or if no specific origins are defined, allow all
+    if (process.env.NODE_ENV === 'production' && allowedOrigins.length > 0) {
+      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS not allowed'));
+      }
+    } else {
+      // In development or if no allowed origins are specified, allow all origins
+      callback(null, true);
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Origin", "Accept"],
+  credentials: true,
+  maxAge: 86400 // 24 hours
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
+
 // Handle OPTIONS requests for preflight
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.status(200).end();
-});
-
-// Add middleware to handle preflight requests
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
-  next();
-});
-
-// Update CORS configuration - simplify to allow all origins
-app.use(cors({
-  origin: '*', // Allow all origins
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Origin", "Accept"]
-}));
+app.options('*', cors(corsOptions));
 
 // Socket.IO setup with CORS configuration
 const io = socketIo(server, {
-  cors: {
-    origin: '*', // Allow all origins
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Origin", "Accept"]
-  },
+  cors: corsOptions,
   path: '/socket.io',
   pingTimeout: 60000,
   pingInterval: 25000,
@@ -363,18 +369,7 @@ app.get('/', (req, res) => {
 });
 
 // API routes
-app.use('/api/auth', (req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
-  next();
-}, authRoutes);
-
+app.use('/api/auth', authRoutes);
 app.use('/api/users', require('./routes/user.routes'));
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
