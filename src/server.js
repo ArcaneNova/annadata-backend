@@ -26,6 +26,14 @@ const aiRoutes = require('./routes/ai.routes');
 const app = express();
 const server = http.createServer(app);
 
+// Simple CORS configuration
+app.use(cors({
+  origin: 'https://annadata-client.vercel.app',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept']
+}));
+
 // Parse JSON request bodies
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -35,29 +43,12 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
-// Configure CORS to allow specific origins with credentials
-const corsOptions = {
-  origin: [
-    'https://annadata-client.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:5173'
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Origin", "Accept"],
-  credentials: true,
-  maxAge: 86400, // 24 hours
-  optionsSuccessStatus: 200 // Return 200 for preflight requests
-};
-
-// Apply CORS middleware
-app.use(cors(corsOptions));
-
-// Handle OPTIONS requests for preflight
-app.options('*', cors(corsOptions));
-
-// Socket.IO setup with CORS configuration
+// Socket.IO setup
 const io = socketIo(server, {
-  cors: corsOptions,
+  cors: {
+    origin: 'https://annadata-client.vercel.app',
+    credentials: true
+  },
   path: '/socket.io',
   pingTimeout: 60000,
   pingInterval: 25000,
