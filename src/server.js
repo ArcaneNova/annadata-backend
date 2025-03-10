@@ -29,9 +29,7 @@ const server = http.createServer(app);
 // Simple CORS configuration
 app.use(cors({
   origin: 'https://annadata-client.vercel.app',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept']
+  credentials: true
 }));
 
 // Parse JSON request bodies
@@ -46,7 +44,7 @@ app.get('/api/health', (req, res) => {
 // Socket.IO setup
 const io = socketIo(server, {
   cors: {
-    origin: 'https://annadata-client.vercel.app',
+    origin: '*',
     credentials: true
   },
   path: '/socket.io',
