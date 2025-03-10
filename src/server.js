@@ -35,6 +35,14 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
+// Handle OPTIONS requests for preflight
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.status(200).end();
+});
+
 // Add middleware to handle preflight requests
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -49,21 +57,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// Update CORS configuration
+// Update CORS configuration - simplify to allow all origins
 app.use(cors({
-  origin: true, // Allow all origins with credentials support
+  origin: '*', // Allow all origins
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Origin", "Accept"]
 }));
 
 // Socket.IO setup with CORS configuration
 const io = socketIo(server, {
   cors: {
-    origin: true, // Allow all origins with credentials support
+    origin: '*', // Allow all origins
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"]
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Origin", "Accept"]
   },
   path: '/socket.io',
   pingTimeout: 60000,
@@ -357,7 +363,18 @@ app.get('/', (req, res) => {
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+}, authRoutes);
+
 app.use('/api/users', require('./routes/user.routes'));
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
